@@ -29,22 +29,11 @@ function startCarnum() {
 }
 
 function checkData() {
-
 	//检查各信息项输入是否为空
 	if ($("#carNum").val() == "闽D" || $("#carNum").val() == "") {
 		alert("车牌号未填");
 		return false;
-	}
-
-	/*
-	bug:如果页面刷新，则点击按钮不会进行车牌检测，就会出现两个相同的车牌记录
-	 *需要修改
-	 */
-//	if (G_judge) {
-//		alert("该车牌号已存在");
-//		return false;
-//	}
-
+	} 
 	if ($("#Owner").val() == "") {
 		alert("单位未填");
 		return false;

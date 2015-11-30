@@ -218,7 +218,7 @@ public partial class _Default : System.Web.UI.Page
             UPDATE  dbo.CarManage 
             SET IsRemove = 'Y', RemoveTime ='{0}' , note = '{1}'
             WHERE SerialNum = {2}  
-            ", DateTime.Now.ToString(), notes + myID.ToString(), serialNum);
+            ", DateTime.Now.ToString(), notes, serialNum);
             read.Close();
 
             cmd.CommandText = DeleteSQL;
