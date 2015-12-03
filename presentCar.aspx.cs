@@ -22,12 +22,12 @@ public partial class presentCar : System.Web.UI.Page
 
     protected void Page_Load(object sender, EventArgs e)
     {
-        //check_privillage();
+        check_privillage();
         if (!IsPostBack)
         {
             this.SqlDS_carClass.SelectCommand = "SELECT cc_id,cc_name FROM dbo.CarClass";
             //this.HidFiel_selectSQL.Value = "SELECT CarBoard,PassTime,comecartime FROM peccancy20130607  WHERE RunDirection = 1 ORDER BY PassTime DESC ";
-            this.HidFiel_selectSQL.Value = "SELECT CarBoard,PassTime,comecartime FROM peccancy" + DateTime.Now.ToString("yyyyMMdd") + "  WHERE RunDirection = 1 ORDER BY PassTime DESC ";//+DateTime.Now.ToString("yyyyMMdd") 
+            this.HidFiel_selectSQL.Value = "SELECT a1.CarBoard,a1.PassTime,if(a2.CarBoard='',NULL,a2.PassTime) comecartime FROM peccancy" + DateTime.Now.ToString("yyyyMMdd") + " a1 " + " LEFT JOIN peccancy" + DateTime.Now.ToString("yyyyMMdd") + " a2 ON a1.comecarsirialnum=a2.SerialNum WHERE a1.RunDirection = 1 ORDER BY a1.PassTime DESC ";//+DateTime.Now.ToString("yyyyMMdd") 
             this.check_starTime.Value = DateTime.Now.ToString("yyyy-MM-dd 00:00:00");
             this.check_endTime.Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:00");
             this.HidFiel_selectSQL_sql.Value = "SELECT CarPlateNum,CarPlateColor,CarColor,CarStyle,DriverName,CarClass,cc_name,IsOneTime,RangeSTTM,RangeEDTM,note,InitTime,RemoveTime FROM dbo.CarManage,dbo.CarClass WHERE cc_id = CarClass ";
@@ -51,11 +51,11 @@ public partial class presentCar : System.Web.UI.Page
         {
             if (this.check_carNum.Value == "未识别")
             {
-                data.Append("AND CarBoard = '' ");
+                data.Append("AND a1.CarBoard = '' ");
             }
             else
             {
-                data.Append("AND CarBoard Like '%");
+                data.Append("AND a1.CarBoard Like '%");
                 data.Append(this.check_carNum.Value);
                 data.Append("%'");
             }
@@ -71,29 +71,30 @@ public partial class presentCar : System.Web.UI.Page
         //TimeSpan ts = Enddt.Subtract(Stadt);
         DateTime tmp = Stadt;
         string tableName = string.Empty; //要查询表
-        while(true)
-        { 
-            tableName = tmp.ToString ("yyyyMMdd");
-            if( 0 == tableName.CompareTo(Enddt.ToString("yyyyMMdd")))
+        while (true)
+        {
+            tableName = tmp.ToString("yyyyMMdd");
+            if (0 == tableName.CompareTo(Enddt.ToString("yyyyMMdd")))
                 break;
             TableNameList.Add("peccancy" + tableName);
             tmp = tmp.AddDays(1);
         }
         TableNameList.Add("peccancy" + tableName);
-     
+
         //产生进出场表的SQL查询语句
-        string selectSQL_temp = "( SELECT CarBoard,PassTime,comecartime FROM " + TableNameList[0] + " WHERE RunDirection = 1 " + oCarSelect + " )";
+        string selectSQL_temp = "( SELECT a1.CarBoard,a1.PassTime,if(a2.CarBoard='',NULL,a2.PassTime) comecartime FROM " + TableNameList[0] + " a1 LEFT JOIN " + TableNameList[0] + " a2 ON a1.comecarsirialnum=a2.SerialNum WHERE a1.RunDirection = 1 " + oCarSelect + " )";
         for (int i = 1; i < TableNameList.Count; i++)
         {
             //System.Windows.Forms.MessageBox.Show(TableNameList[i]);
-            selectSQL_temp += " UNION ( SELECT CarBoard,PassTime,comecartime FROM " + TableNameList[i] + " WHERE RunDirection = 1 " + oCarSelect + " )";
+            selectSQL_temp += " UNION ( SELECT a1.CarBoard,a1.PassTime,if(a2.CarBoard='',NULL,a2.PassTime) comecartime FROM " + TableNameList[i] + " a1 LEFT JOIN " + TableNameList[i] + " a2 ON a1.comecarsirialnum=a2.SerialNum WHERE a1.RunDirection = 1 " + oCarSelect + " )";
         }
         this.HidFiel_selectSQL.Value = selectSQL_temp + "  ORDER BY PassTime DESC";
     }
 
-    protected void getInCarData() 
+    protected void getInCarData()
     {
         //进出场车详细信息获取
+        Nullable<DateTime> dateNull = null;
         string connectionString = WebConfigurationManager.ConnectionStrings["Mysqls"].ConnectionString;
         string connectionString_sql = WebConfigurationManager.ConnectionStrings["Pubs"].ConnectionString;
 
@@ -137,7 +138,7 @@ public partial class presentCar : System.Web.UI.Page
                     continue;
 
                 /*时间段内进出场车辆记录*/
-                carData.carPlateNum = reader["CarBoard"].ToString();     
+                carData.carPlateNum = reader["CarBoard"].ToString();
                 carData.InYardTime = reader.IsDBNull(1) ? null : Convert.ToDateTime(reader["PassTime"]).ToString("yy-MM-dd HH:mm");
                 carData.OutYardTime = reader.IsDBNull(2) ? null : Convert.ToDateTime(reader["comecartime"]).ToString("yy-MM-dd HH:mm"); //here try to define null value /pass?
 
@@ -162,8 +163,9 @@ public partial class presentCar : System.Web.UI.Page
                             carData.carStyle = s_reader["CarStyle"].ToString();
                             carData.carNote = s_reader["note"].ToString();
                             carData.carOwner = s_reader["DriverName"].ToString();
-                            carData.RangeSTTM = Convert.ToDateTime(s_reader["RangeSTTM"]).ToString("yy-MM-dd HH:mm:ss");
-                            carData.RangeEDTM = Convert.ToDateTime(s_reader["RangeEDTM"]).ToString("yy-MM-dd HH:mm:ss"); //s_reader["RangeEDTM"].ToString();
+                           // carData.RangeSTTM = s_reader.IsDBNull(10) ? dateNull.ToString() : Convert.ToDateTime(s_reader["RangeSTTM"]).ToString();//.ToString("yy-MM-dd HH:mm:ss");
+                            carData.RangeSTTM = s_reader["RangeSTTM"].ToString() == "" ? dateNull.ToString(): Convert.ToDateTime(s_reader["RangeSTTM"]).ToString("yy-MM-dd HH:mm:ss");
+                            carData.RangeEDTM = s_reader["RangeEDTM"].ToString() == "" ? dateNull.ToString() : Convert.ToDateTime(s_reader["RangeEDTM"]).ToString("yy-MM-dd HH:mm:ss"); //s_reader["RangeEDTM"].ToString();
                             carData.DeleteTime = s_reader.IsDBNull(12) ? "0" : Convert.ToDateTime(s_reader["RemoveTime"]).ToString("yyyy-MM-dd HH:mm:ss");
                             //进行比较
                             if (carData.DeleteTime.ToString() != "0" && 0 > carData.DeleteTime.CompareTo(carData.InYardTime))
@@ -190,13 +192,13 @@ public partial class presentCar : System.Web.UI.Page
                         con.Close();
                     }
                 }
-                
+
                 if (this.Checkbox_illegal.Checked == true && carData.illegalCar != 'Y')  //查询判断式（gridview仅显示违禁车辆）
                     continue;
                 else
                     carDataList.Add(carData);
 
-            } 
+            }
             getcarCount(carDataList.Count);//获取车辆数量
             reader.Close();
         }
@@ -379,7 +381,7 @@ public partial class presentCar : System.Web.UI.Page
 
     protected void ImageButton1_Click(object sender, ImageClickEventArgs e)
     {
-           ConvertExcel.toExcel(this, this.GridView_nowCar);
+        ConvertExcel.toExcel(this, this.GridView_nowCar);
     }
     public override void VerifyRenderingInServerForm(Control control)
     {
